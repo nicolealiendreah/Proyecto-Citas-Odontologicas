@@ -14,7 +14,8 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
-  int selectedDay = 5;
+  DateTime focusedMonth = DateTime.now();
+  DateTime selectedDate = DateTime.now();
   String selectedTime = '11:15';
 
   final List<Map<String, String>> timeSlots = [
@@ -140,7 +141,38 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   Widget _buildCalendarCard() {
-    final days = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    final firstDayOfMonth = DateTime(focusedMonth.year, focusedMonth.month, 1);
+    final lastDayOfMonth = DateTime(
+      focusedMonth.year,
+      focusedMonth.month + 1,
+      0,
+    );
+    final daysInMonth = lastDayOfMonth.day;
+
+    final startWeekday = firstDayOfMonth.weekday; // lunes = 1
+    final previousMonthLastDay = DateTime(
+      focusedMonth.year,
+      focusedMonth.month,
+      0,
+    ).day;
+
+    final monthNames = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+
+    final currentMonthTitle =
+        '${monthNames[focusedMonth.month - 1]} ${focusedMonth.year}';
 
     return Container(
       width: double.infinity,
@@ -155,7 +187,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           Row(
             children: [
               Text(
-                'Octubre 2023',
+                currentMonthTitle,
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -163,12 +195,37 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.chevron_left, size: 22),
+
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    focusedMonth = DateTime(
+                      focusedMonth.year,
+                      focusedMonth.month - 1,
+                    );
+                  });
+                },
+                child: const Icon(Icons.chevron_left, size: 22),
+              ),
+
               const SizedBox(width: 12),
-              const Icon(Icons.chevron_right, size: 22),
+
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    focusedMonth = DateTime(
+                      focusedMonth.year,
+                      focusedMonth.month + 1,
+                    );
+                  });
+                },
+                child: const Icon(Icons.chevron_right, size: 22),
+              ),
             ],
           ),
+
           const SizedBox(height: 24),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
@@ -184,56 +241,75 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 )
                 .toList(),
           ),
+
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              25,
-              26,
-              27,
-              28,
-              29,
-              30,
-              1,
-            ].map((d) => _calendarNumber('$d', faded: true)).toList(),
-          ),
-          const SizedBox(height: 18),
+
           Wrap(
             spacing: 18,
             runSpacing: 18,
-            children: days.map((day) {
-              final isSelected = day == selectedDay;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedDay = day;
-                  });
-                },
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFAEDDF8)
-                        : Colors.transparent,
-                    shape: BoxShape.circle,
+            children: [
+              ...List.generate(startWeekday - 1, (index) {
+                final day = previousMonthLastDay - (startWeekday - 2) + index;
+                return _calendarNumber('$day', faded: true);
+              }),
+
+              ...List.generate(daysInMonth, (index) {
+                final day = index + 1;
+                final date = DateTime(
+                  focusedMonth.year,
+                  focusedMonth.month,
+                  day,
+                );
+
+                final isSelected =
+                    selectedDate.year == date.year &&
+                    selectedDate.month == date.month &&
+                    selectedDate.day == date.day;
+
+                final isPast = date.isBefore(
+                  DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day,
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$day',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: Colors.black,
+                );
+
+                return GestureDetector(
+                  onTap: isPast
+                      ? null
+                      : () {
+                          setState(() {
+                            selectedDate = date;
+                          });
+                        },
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFAEDDF8)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$day',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isPast ? const Color(0xFFD0D5DD) : Colors.black,
+                      ),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }),
+            ],
           ),
+
           const SizedBox(height: 24),
+
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -253,27 +329,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Información de disponibilidad',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Los horarios se actualizan en tiempo real\nsegún cancelaciones.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Los horarios se actualizan en tiempo real según cancelaciones.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.3,
+                    ),
                   ),
                 ),
               ],
@@ -311,7 +373,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'JUEVES, 5 OCT',
+            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -375,7 +437,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
                   await AppointmentService().createAppointment(
                     patientName: patientName,
-                    date: '2026-10-$selectedDay',
+                    date:
+                        '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
                     time: selectedTime,
                     treatment: timeSlots.firstWhere(
                       (e) => e['time'] == selectedTime,
