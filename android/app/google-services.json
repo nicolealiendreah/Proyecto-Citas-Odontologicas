@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "74313558547",
+    "project_id": "citas-odontologicas-d7063",
+    "storage_bucket": "citas-odontologicas-d7063.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74313558547:android:2447ff2b9ee14b2bdc6de6",
+        "android_client_info": {
+          "package_name": "com.example.mydent_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVnG2ajGWyNABvKdrcxZ0wu8L1q5iK4jE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
