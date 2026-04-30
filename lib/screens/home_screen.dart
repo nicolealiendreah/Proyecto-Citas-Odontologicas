@@ -4,6 +4,7 @@ import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/app_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -420,49 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: Container(
-          height: 78,
-          margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.98),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              const _NavItem(
-                icon: Icons.home_filled,
-                label: 'INICIO',
-                active: true,
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/manage-appointments');
-                },
-                child: const _NavItem(
-                  icon: Icons.calendar_month_outlined,
-                  label: 'CITAS',
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/history');
-                },
-                child: const _NavItem(icon: Icons.history, label: 'HISTORIAL'),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-                child: const _NavItem(
-                  icon: Icons.person_outline,
-                  label: 'PERFIL',
-                ),
-              ),
-            ],
-          ),
-        ),
+        bottomNavigationBar: const AppNavBar(currentIndex: 0),
       ),
     );
   }
@@ -510,41 +469,6 @@ class _SmallCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 22,
-          color: active ? AppColors.primary : const Color(0xFF94A3B8),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? AppColors.primary : const Color(0xFF94A3B8),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
 import '../services/appointment_service.dart';
+import '../widgets/app_nav_bar.dart';
 
 class ManageAppointmentsScreen extends StatelessWidget {
   const ManageAppointmentsScreen({super.key});
@@ -85,6 +86,7 @@ class ManageAppointmentsScreen extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 18),
                           child: _buildAppointmentCard(
+                            context: context,
                             appointmentId: doc.id,
                             accentColor: const Color(0xFF0F7892),
                             patientName: data['patientName'] ?? 'Paciente',
@@ -103,7 +105,7 @@ class ManageAppointmentsScreen extends StatelessWidget {
             ),
           ),
         ),
-        bottomNavigationBar: _buildBottomNav(context),
+        bottomNavigationBar: const AppNavBar(currentIndex: 1),
       ),
     );
   }
@@ -254,6 +256,7 @@ class ManageAppointmentsScreen extends StatelessWidget {
   }
 
   Widget _buildAppointmentCard({
+    required BuildContext context,
     required String appointmentId,
     required Color accentColor,
     required String patientName,
@@ -379,11 +382,11 @@ class ManageAppointmentsScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () async {
-                            await AppointmentService().rescheduleAppointment(
-                              id: appointmentId,
-                              newDate: '2026-04-29',
-                              newTime: '10:30 AM',
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/appointments',
+                              arguments: appointmentId,
                             );
                           },
                           style: OutlinedButton.styleFrom(
@@ -432,86 +435,6 @@ class ManageAppointmentsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      height: 82,
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.98),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/home');
-            },
-            child: const _NavItem(icon: Icons.home_filled, label: 'INICIO'),
-          ),
-          const _NavItem(
-            icon: Icons.calendar_month,
-            label: 'CITAS',
-            active: true,
-          ),
-          GestureDetector(
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/history');
-            },
-            child: const _NavItem(icon: Icons.history, label: 'HISTORIAL'),
-          ),
-          const _NavItem(icon: Icons.person_outline, label: 'PERFIL'),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: active
-          ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
-          : EdgeInsets.zero,
-      decoration: active
-          ? BoxDecoration(
-              color: const Color(0xFFD9EEF9),
-              borderRadius: BorderRadius.circular(16),
-            )
-          : null,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 22,
-            color: active ? AppColors.primary : const Color(0xFF94A3B8),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              color: active ? AppColors.primary : const Color(0xFF94A3B8),
             ),
           ),
         ],
