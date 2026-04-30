@@ -53,8 +53,6 @@ class HistoryScreen extends StatelessWidget {
                   stream: FirebaseFirestore.instance
                       .collection('appointments')
                       .where('userId', isEqualTo: user.uid)
-                      .where('status', whereIn: ['cancelada', 'completada'])
-                      .orderBy('date', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -71,8 +69,23 @@ class HistoryScreen extends StatelessWidget {
                       );
                     }
 
-                    final citas = snapshot.data!.docs;
-
+                    final citas = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final status = (data['status'] ?? '')
+                          .toString()
+                          .toLowerCase()
+                          .trim();
+                      return status == 'cancelada' || status == 'completada';
+                    }).toList();
+                    if (citas.isEmpty) {
+                      return Text(
+                        'Aún no tienes citas en tu historial.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      );
+                    }
                     return Column(
                       children: citas.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
