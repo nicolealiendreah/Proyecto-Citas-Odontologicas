@@ -29,6 +29,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+  final appointmentId = ModalRoute.of(context)?.settings.arguments as String?;
+  final isReschedule = appointmentId != null;
+    
     return MobileFrame(
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F8),
