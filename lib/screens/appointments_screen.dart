@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
-import '../services/appointment_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/app_nav_bar.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -434,63 +431,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: double.infinity,
             height: 58,
             child: ElevatedButton(
-              onPressed: () async {
-                try {
-                  final uid = FirebaseAuth.instance.currentUser!.uid;
+              onPressed: () {
+                final selectedTreatment = timeSlots.firstWhere(
+                  (e) => e['time'] == selectedTime,
+                )['type']!;
 
-                  final userDoc = await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .get();
+                final formattedDate =
+                    '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
 
-                  final patientName = userDoc.data()?['fullName'] ?? 'Paciente';
-
-                  final selectedTreatment = timeSlots.firstWhere(
-                    (e) => e['time'] == selectedTime,
-                  )['type']!;
-
-                  final formattedDate =
-                      '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
-
-                  if (isReschedule && appointmentId != null) {
-                    await AppointmentService().rescheduleAppointment(
-                      id: appointmentId,
-                      newDate: formattedDate,
-                      newTime: selectedTime,
-                      treatment: selectedTreatment,
-                      doctor: 'Dr. Marcos Reys',
-                    );
-                  } else {
-                    await AppointmentService().createAppointment(
-                      patientName: patientName,
-                      date: formattedDate,
-                      time: selectedTime,
-                      treatment: selectedTreatment,
-                      doctor: 'Dr. Marcos Reys',
-                    );
-                  }
-
-                  if (!mounted) return;
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isReschedule
-                            ? 'Cita reprogramada correctamente'
-                            : 'Cita registrada correctamente',
-                      ),
-                    ),
-                  );
-
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/manage-appointments',
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(e.toString())));
-                }
+                Navigator.pushNamed(
+                  context,
+                  '/confirm-appointment',
+                  arguments: {
+                    'isReschedule': isReschedule,
+                    'appointmentId': appointmentId,
+                    'date': formattedDate,
+                    'time': selectedTime,
+                    'treatment': selectedTreatment,
+                    'doctor': 'Dr. Marcos Reys',
+                  },
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

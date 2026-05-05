@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
+import '../services/appointment_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ConfirmAppointmentScreen extends StatelessWidget {
   const ConfirmAppointmentScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+
+    final bool isReschedule = args['isReschedule'] ?? false;
+    final String? appointmentId = args['appointmentId'];
+    final String date = args['date'];
+    final String time = args['time'];
+    final String treatment = args['treatment'];
+    final String doctor = args['doctor'];
+
     return MobileFrame(
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F8),
@@ -49,7 +62,12 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 42),
-                _detailCard(),
+                _detailCard(
+                  treatment: treatment,
+                  doctor: doctor,
+                  date: date,
+                  time: time,
+                ),
                 const SizedBox(height: 24),
                 _treatmentCard(),
                 const SizedBox(height: 34),
@@ -71,13 +89,55 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 58,
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cita confirmada correctamente'),
-                        ),
-                      );
-                      Navigator.pushReplacementNamed(context, '/home');
+                    onPressed: () async {
+                      try {
+                        final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                        final userDoc = await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .get();
+
+                        final patientName =
+                            userDoc.data()?['fullName'] ?? 'Paciente';
+
+                        if (isReschedule && appointmentId != null) {
+                          await AppointmentService().rescheduleAppointment(
+                            id: appointmentId,
+                            newDate: date,
+                            newTime: time,
+                            treatment: treatment,
+                            doctor: doctor,
+                          );
+                        } else {
+                          await AppointmentService().createAppointment(
+                            patientName: patientName,
+                            date: date,
+                            time: time,
+                            treatment: treatment,
+                            doctor: doctor,
+                          );
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isReschedule
+                                  ? 'Cita reprogramada correctamente'
+                                  : 'Cita confirmada correctamente',
+                            ),
+                          ),
+                        );
+
+                        Navigator.pushReplacementNamed(
+                          context,
+                          '/manage-appointments',
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -168,7 +228,12 @@ class ConfirmAppointmentScreen extends StatelessWidget {
     );
   }
 
-  Widget _detailCard() {
+  Widget _detailCard({
+    required String treatment,
+    required String doctor,
+    required String date,
+    required String time,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 26),
@@ -183,7 +248,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Ortodoncia Invisible',
+                  treatment,
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -214,7 +279,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Dr. Alejandro Vargas',
+            doctor,
             style: GoogleFonts.inter(
               fontSize: 17,
               color: AppColors.textPrimary,
@@ -225,14 +290,10 @@ class ConfirmAppointmentScreen extends StatelessWidget {
           _infoRow(
             icon: Icons.calendar_today_outlined,
             label: 'FECHA',
-            value: 'Viernes, 24 Mayo 2024',
+            value: date,
           ),
           const SizedBox(height: 22),
-          _infoRow(
-            icon: Icons.access_time,
-            label: 'HORA',
-            value: '10:30 AM — 11:15 AM',
-          ),
+          _infoRow(icon: Icons.access_time, label: 'HORA', value: time),
           const SizedBox(height: 22),
           _infoRow(
             icon: Icons.location_on,
