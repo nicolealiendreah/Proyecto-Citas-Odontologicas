@@ -57,11 +57,16 @@ class AppointmentService {
     required String id,
     required String newDate,
     required String newTime,
+    required String treatment,
+    required String doctor,
   }) async {
     await _db.collection('appointments').doc(id).update({
       'date': newDate,
       'time': newTime,
+      'treatment': treatment,
+      'doctor': doctor,
       'status': 'reprogramada',
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 }

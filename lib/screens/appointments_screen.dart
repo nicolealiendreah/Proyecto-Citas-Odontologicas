@@ -29,9 +29,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-  final appointmentId = ModalRoute.of(context)?.settings.arguments as String?;
-  final isReschedule = appointmentId != null;
-    
+    final appointmentId = ModalRoute.of(context)?.settings.arguments as String?;
+    final isReschedule = appointmentId != null;
+
     return MobileFrame(
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F8),
@@ -81,7 +81,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
                 _buildCalendarCard(),
                 const SizedBox(height: 22),
-                _buildAvailableSlotsCard(),
+                _buildAvailableSlotsCard(
+                  isReschedule: isReschedule,
+                  appointmentId: appointmentId,
+                ),
                 const SizedBox(height: 22),
                 _buildUrgencyCard(),
                 const SizedBox(height: 22),
@@ -365,7 +368,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     );
   }
 
-  Widget _buildAvailableSlotsCard() {
+  Widget _buildAvailableSlotsCard({
+    required bool isReschedule,
+    required String? appointmentId,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -439,22 +445,40 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
                   final patientName = userDoc.data()?['fullName'] ?? 'Paciente';
 
-                  await AppointmentService().createAppointment(
-                    patientName: patientName,
-                    date:
-                        '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
-                    time: selectedTime,
-                    treatment: timeSlots.firstWhere(
-                      (e) => e['time'] == selectedTime,
-                    )['type']!,
-                    doctor: 'Dr. Marcos Reys',
-                  );
+                  final selectedTreatment = timeSlots.firstWhere(
+                    (e) => e['time'] == selectedTime,
+                  )['type']!;
+
+                  final formattedDate =
+                      '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+
+                  if (isReschedule && appointmentId != null) {
+                    await AppointmentService().rescheduleAppointment(
+                      id: appointmentId,
+                      newDate: formattedDate,
+                      newTime: selectedTime,
+                      treatment: selectedTreatment,
+                      doctor: 'Dr. Marcos Reys',
+                    );
+                  } else {
+                    await AppointmentService().createAppointment(
+                      patientName: patientName,
+                      date: formattedDate,
+                      time: selectedTime,
+                      treatment: selectedTreatment,
+                      doctor: 'Dr. Marcos Reys',
+                    );
+                  }
 
                   if (!mounted) return;
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cita registrada correctamente'),
+                    SnackBar(
+                      content: Text(
+                        isReschedule
+                            ? 'Cita reprogramada correctamente'
+                            : 'Cita registrada correctamente',
+                      ),
                     ),
                   );
 
