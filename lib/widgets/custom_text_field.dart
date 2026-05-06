@@ -8,6 +8,8 @@ class CustomTextField extends StatelessWidget {
   final IconData icon;
   final TextEditingController controller;
   final bool obscureText;
+  final Widget? suffixIcon;
+  final VoidCallback? onSuffixTap;
 
   const CustomTextField({
     super.key,
@@ -16,6 +18,8 @@ class CustomTextField extends StatelessWidget {
     required this.icon,
     required this.controller,
     this.obscureText = false,
+    this.suffixIcon,
+    this.onSuffixTap,
   });
 
   @override
@@ -55,14 +59,14 @@ class CustomTextField extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(icon, size: 20, color: const Color(0xFFC7CDD4)),
+            if (suffixIcon == null)
+              Icon(icon, size: 20, color: const Color(0xFFC7CDD4))
+            else
+              GestureDetector(onTap: onSuffixTap, child: suffixIcon!),
           ],
         ),
         const SizedBox(height: 10),
-        Container(
-          height: 1,
-          color: AppColors.line,
-        ),
+        Container(height: 1, color: AppColors.line),
       ],
     );
   }

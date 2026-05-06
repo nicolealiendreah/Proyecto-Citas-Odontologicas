@@ -5,6 +5,9 @@ import '../core/mobile_frame.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/app_nav_bar.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -101,14 +104,18 @@ class HistoryScreen extends StatelessWidget {
                         } else {
                           fecha = DateTime.now();
                         }
-                        final status = data['status'] ?? '';
+                        final status = (data['status'] ?? '')
+                            .toString()
+                            .toLowerCase()
+                            .trim();
                         final tratamiento =
-                            data['treatment'] ?? 'Consulta odontológica';
-                        final doctor = data['doctor'] ?? 'Odontólogo';
-                        final hora = data['time'] ?? '';
+                            (data['treatment'] ?? 'Consulta odontológica')
+                                .toString();
+                        final doctor = (data['doctor'] ?? 'Odontólogo')
+                            .toString();
+                        final hora = (data['time'] ?? '').toString();
 
                         final esCancelada = status == 'cancelada';
-
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 18),
                           child: _buildHistoryCard(
@@ -132,34 +139,38 @@ class HistoryScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 22),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.72),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFD9E1E8)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.download_outlined,
-                        color: AppColors.textPrimary,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Descargar Reporte Completo',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _downloadFullReport(context, user.uid),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFD9E1E8)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.download_outlined,
                           color: AppColors.textPrimary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Text(
+                          'Descargar Reporte Completo',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -169,6 +180,142 @@ class HistoryScreen extends StatelessWidget {
         bottomNavigationBar: const AppNavBar(currentIndex: 2),
       ),
     );
+  }
+
+  Future<void> _downloadFullReport(BuildContext context, String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      final citas = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final status = (data['status'] ?? '').toString().toLowerCase().trim();
+        return status == 'cancelada' || status == 'completada';
+      }).toList();
+
+      if (citas.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No hay citas en el historial para generar el reporte.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      citas.sort((a, b) {
+        final fechaA = _parseDate(a.data()['date']);
+        final fechaB = _parseDate(b.data()['date']);
+        return fechaB.compareTo(fechaA);
+      });
+
+      final pdf = pw.Document();
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (pw.Context pdfContext) {
+            return [
+              pw.Text(
+                'MYDENT',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                'Reporte completo de historial de citas',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                'Generado el: ${_formatDate(DateTime.now())}',
+                style: const pw.TextStyle(fontSize: 11),
+              ),
+              pw.SizedBox(height: 24),
+
+              pw.TableHelper.fromTextArray(
+                headers: ['Fecha', 'Hora', 'Tratamiento', 'Doctor', 'Estado'],
+                data: citas.map((doc) {
+                  final data = doc.data();
+
+                  final fecha = _parseDate(data['date']);
+                  final hora = (data['time'] ?? '').toString();
+                  final tratamiento =
+                      (data['treatment'] ?? 'Consulta odontológica').toString();
+                  final doctor = (data['doctor'] ?? 'Odontólogo').toString();
+                  final status = (data['status'] ?? '')
+                      .toString()
+                      .toUpperCase();
+
+                  return [
+                    _formatDate(fecha),
+                    hora,
+                    tratamiento,
+                    doctor,
+                    status,
+                  ];
+                }).toList(),
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+                headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.blueGrey800,
+                ),
+                cellStyle: const pw.TextStyle(fontSize: 10),
+                cellAlignment: pw.Alignment.centerLeft,
+                cellPadding: const pw.EdgeInsets.all(8),
+              ),
+
+              pw.SizedBox(height: 24),
+              pw.Text(
+                'Total de citas en historial: ${citas.length}',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ];
+          },
+        ),
+      );
+
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'reporte_historial_citas_mydent.pdf',
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al generar el reporte: $e')),
+      );
+    }
+  }
+
+  DateTime _parseDate(dynamic fechaRaw) {
+    if (fechaRaw is Timestamp) {
+      return fechaRaw.toDate();
+    }
+
+    if (fechaRaw is String) {
+      return DateTime.tryParse(fechaRaw) ?? DateTime.now();
+    }
+
+    return DateTime.now();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
   }
 
   Widget _buildTopBar() {

@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _obscurePassword = true;
   String? errorText;
 
   Future<void> _login() async {
@@ -144,9 +145,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         CustomTextField(
                           label: 'Contraseña',
                           hint: '••••••••',
-                          icon: Icons.visibility_outlined,
+                          icon: Icons.lock_outline,
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
+                          suffixIcon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 20,
+                            color: const Color(0xFFC7CDD4),
+                          ),
+                          onSuffixTap: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         const SizedBox(height: 16),
                         Align(

@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _obscurePassword = true;
   String? errorText;
 
   Future<void> _register() async {
@@ -165,9 +166,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         CustomTextField(
                           label: 'Contraseña',
                           hint: '••••••••',
-                          icon: Icons.visibility_off_outlined,
+                          icon: Icons.lock_outline,
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
+                          suffixIcon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 20,
+                            color: const Color(0xFFC7CDD4),
+                          ),
+                          onSuffixTap: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                         const SizedBox(height: 34),
                         PrimaryButton(
