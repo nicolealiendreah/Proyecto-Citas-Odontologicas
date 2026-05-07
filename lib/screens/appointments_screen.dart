@@ -17,16 +17,27 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   String selectedTime = '11:15';
 
   final List<Map<String, String>> timeSlots = [
-    {'time': '09:00', 'period': 'Mañana', 'type': 'Limpieza General'},
-    {'time': '10:30', 'period': 'Mañana', 'type': 'Consulta Inicial'},
-    {'time': '11:15', 'period': 'Mañana', 'type': 'Recomendado para ti'},
-    {'time': '15:00', 'period': 'Tarde', 'type': 'Tratamiento de Conducto'},
-    {'time': '17:45', 'period': 'Tarde', 'type': 'Ortodoncia'},
+    {'time': '09:00', 'period': 'Mañana', 'label': 'Disponible'},
+    {'time': '10:30', 'period': 'Mañana', 'label': 'Disponible'},
+    {'time': '11:15', 'period': 'Mañana', 'label': 'Recomendado para ti'},
+    {'time': '15:00', 'period': 'Tarde', 'label': 'Disponible'},
+    {'time': '17:45', 'period': 'Tarde', 'label': 'Disponible'},
   ];
 
   @override
   Widget build(BuildContext context) {
-    final appointmentId = ModalRoute.of(context)?.settings.arguments as String?;
+    final args = ModalRoute.of(context)?.settings.arguments;
+
+    String? appointmentId;
+    String selectedTreatment = 'Consulta Odontológica';
+
+    if (args is String) {
+      appointmentId = args;
+    } else if (args is Map<String, dynamic>) {
+      appointmentId = args['appointmentId'];
+      selectedTreatment = args['treatment'] ?? 'Consulta Odontológica';
+    }
+
     final isReschedule = appointmentId != null;
 
     return MobileFrame(
@@ -81,6 +92,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 _buildAvailableSlotsCard(
                   isReschedule: isReschedule,
                   appointmentId: appointmentId,
+                  selectedTreatment: selectedTreatment,
                 ),
                 const SizedBox(height: 22),
                 _buildUrgencyCard(),
@@ -368,6 +380,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Widget _buildAvailableSlotsCard({
     required bool isReschedule,
     required String? appointmentId,
+    required String selectedTreatment,
   }) {
     return Container(
       width: double.infinity,
@@ -432,10 +445,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             height: 58,
             child: ElevatedButton(
               onPressed: () {
-                final selectedTreatment = timeSlots.firstWhere(
-                  (e) => e['time'] == selectedTime,
-                )['type']!;
-
                 final formattedDate =
                     '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
 
@@ -535,7 +544,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    slot['type']!,
+                    slot['label']!,
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: isSelected

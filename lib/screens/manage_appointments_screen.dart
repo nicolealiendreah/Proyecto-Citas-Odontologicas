@@ -4,6 +4,7 @@ import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
 import '../services/appointment_service.dart';
 import '../widgets/app_nav_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ManageAppointmentsScreen extends StatelessWidget {
   const ManageAppointmentsScreen({super.key});
@@ -54,7 +55,7 @@ class ManageAppointmentsScreen extends StatelessWidget {
                 _buildWeeklySummary(context),
 
                 const SizedBox(height: 28),
-                _buildSectionTitle('PRÓXIMAS 24 HORAS'),
+                _buildSectionTitle('PRÓXIMAS CITAS'),
                 const SizedBox(height: 18),
 
                 StreamBuilder(
@@ -77,7 +78,38 @@ class ManageAppointmentsScreen extends StatelessWidget {
                       );
                     }
 
-                    final citas = snapshot.data!.docs;
+                    final citas = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+
+                      final status = (data['status'] ?? '')
+                          .toString()
+                          .toLowerCase()
+                          .trim();
+
+                      final fechaHoraCita = _parseAppointmentDateTime(
+                        data['date'],
+                        data['time'],
+                      );
+
+                      final esFutura = fechaHoraCita.isAfter(DateTime.now());
+
+                      return esFutura &&
+                          status != 'cancelada' &&
+                          status != 'completada';
+                    }).toList();
+
+                    if (citas.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'No tienes citas próximas.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      );
+                    }
 
                     return Column(
                       children: citas.map((doc) {
@@ -440,5 +472,51 @@ class ManageAppointmentsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  DateTime _parseDate(dynamic fechaRaw) {
+    if (fechaRaw is Timestamp) {
+      return fechaRaw.toDate();
+    }
+
+    if (fechaRaw is String) {
+      return DateTime.tryParse(fechaRaw) ?? DateTime.now();
+    }
+
+    return DateTime.now();
+  }
+
+  DateTime _parseAppointmentDateTime(dynamic fechaRaw, dynamic horaRaw) {
+    final fecha = _parseDate(fechaRaw);
+    final horaTexto = (horaRaw ?? '').toString().trim();
+
+    if (horaTexto.isEmpty) {
+      return DateTime(fecha.year, fecha.month, fecha.day);
+    }
+
+    int hour = 0;
+    int minute = 0;
+
+    if (horaTexto.toUpperCase().contains('AM') ||
+        horaTexto.toUpperCase().contains('PM')) {
+      final isPM = horaTexto.toUpperCase().contains('PM');
+
+      final cleanTime = horaTexto
+          .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
+          .trim();
+
+      final parts = cleanTime.split(':');
+      hour = int.tryParse(parts[0]) ?? 0;
+      minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+
+      if (isPM && hour != 12) hour += 12;
+      if (!isPM && hour == 12) hour = 0;
+    } else {
+      final parts = horaTexto.split(':');
+      hour = int.tryParse(parts[0]) ?? 0;
+      minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    }
+
+    return DateTime(fecha.year, fecha.month, fecha.day, hour, minute);
   }
 }

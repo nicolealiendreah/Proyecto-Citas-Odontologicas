@@ -74,11 +74,22 @@ class HistoryScreen extends StatelessWidget {
 
                     final citas = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
+
                       final status = (data['status'] ?? '')
                           .toString()
                           .toLowerCase()
                           .trim();
-                      return status == 'cancelada' || status == 'completada';
+
+                      final fechaHoraCita = _parseAppointmentDateTime(
+                        data['date'],
+                        data['time'],
+                      );
+
+                      final yaPaso = fechaHoraCita.isBefore(DateTime.now());
+
+                      return status == 'cancelada' ||
+                          status == 'completada' ||
+                          yaPaso;
                     }).toList();
                     if (citas.isEmpty) {
                       return Text(
@@ -115,7 +126,20 @@ class HistoryScreen extends StatelessWidget {
                             .toString();
                         final hora = (data['time'] ?? '').toString();
 
+                        final fechaHoraCita = _parseAppointmentDateTime(
+                          data['date'],
+                          data['time'],
+                        );
+
+                        final yaPaso = fechaHoraCita.isBefore(DateTime.now());
                         final esCancelada = status == 'cancelada';
+
+                        final estadoVisible = esCancelada
+                            ? 'CANCELADA'
+                            : yaPaso
+                            ? 'COMPLETADA'
+                            : status.toUpperCase();
+
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 18),
                           child: _buildHistoryCard(
@@ -124,7 +148,7 @@ class HistoryScreen extends StatelessWidget {
                             title: tratamiento,
                             time: hora,
                             doctor: doctor,
-                            status: status.toUpperCase(),
+                            status: estadoVisible,
                             statusColor: esCancelada
                                 ? const Color(0xFFFAD4D0)
                                 : const Color(0xFFD8F3DC),
@@ -191,8 +215,17 @@ class HistoryScreen extends StatelessWidget {
 
       final citas = snapshot.docs.where((doc) {
         final data = doc.data();
+
         final status = (data['status'] ?? '').toString().toLowerCase().trim();
-        return status == 'cancelada' || status == 'completada';
+
+        final fechaHoraCita = _parseAppointmentDateTime(
+          data['date'],
+          data['time'],
+        );
+
+        final yaPaso = fechaHoraCita.isBefore(DateTime.now());
+
+        return status == 'cancelada' || status == 'completada' || yaPaso;
       }).toList();
 
       if (citas.isEmpty) {
@@ -252,9 +285,23 @@ class HistoryScreen extends StatelessWidget {
                   final tratamiento =
                       (data['treatment'] ?? 'Consulta odontológica').toString();
                   final doctor = (data['doctor'] ?? 'Odontólogo').toString();
-                  final status = (data['status'] ?? '')
+                  final rawStatus = (data['status'] ?? '')
                       .toString()
-                      .toUpperCase();
+                      .toLowerCase()
+                      .trim();
+
+                  final fechaHoraCita = _parseAppointmentDateTime(
+                    data['date'],
+                    data['time'],
+                  );
+
+                  final yaPaso = fechaHoraCita.isBefore(DateTime.now());
+
+                  final status = rawStatus == 'cancelada'
+                      ? 'CANCELADA'
+                      : yaPaso
+                      ? 'COMPLETADA'
+                      : rawStatus.toUpperCase();
 
                   return [
                     _formatDate(fecha),
@@ -310,6 +357,40 @@ class HistoryScreen extends StatelessWidget {
     }
 
     return DateTime.now();
+  }
+
+  DateTime _parseAppointmentDateTime(dynamic fechaRaw, dynamic horaRaw) {
+    final fecha = _parseDate(fechaRaw);
+    final horaTexto = (horaRaw ?? '').toString().trim();
+
+    if (horaTexto.isEmpty) {
+      return DateTime(fecha.year, fecha.month, fecha.day);
+    }
+
+    int hour = 0;
+    int minute = 0;
+
+    if (horaTexto.toUpperCase().contains('AM') ||
+        horaTexto.toUpperCase().contains('PM')) {
+      final isPM = horaTexto.toUpperCase().contains('PM');
+
+      final cleanTime = horaTexto
+          .replaceAll(RegExp(r'AM|PM', caseSensitive: false), '')
+          .trim();
+
+      final parts = cleanTime.split(':');
+      hour = int.tryParse(parts[0]) ?? 0;
+      minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+
+      if (isPM && hour != 12) hour += 12;
+      if (!isPM && hour == 12) hour = 0;
+    } else {
+      final parts = horaTexto.split(':');
+      hour = int.tryParse(parts[0]) ?? 0;
+      minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    }
+
+    return DateTime(fecha.year, fecha.month, fecha.day, hour, minute);
   }
 
   String _formatDate(DateTime date) {
