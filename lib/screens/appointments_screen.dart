@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
 import '../widgets/app_nav_bar.dart';
+import '../services/appointment_service.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -444,22 +445,52 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: double.infinity,
             height: 58,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final formattedDate =
                     '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
 
-                Navigator.pushNamed(
-                  context,
-                  '/confirm-appointment',
-                  arguments: {
-                    'isReschedule': isReschedule,
-                    'appointmentId': appointmentId,
-                    'date': formattedDate,
-                    'time': selectedTime,
-                    'treatment': selectedTreatment,
-                    'doctor': 'Dr. Marcos Reys',
-                  },
-                );
+                const doctor = 'Dr. Marcos Reys';
+
+                try {
+                  if (!isReschedule) {
+                    final available = await AppointmentService()
+                        .checkAvailability(
+                          date: formattedDate,
+                          time: selectedTime,
+                          doctor: doctor,
+                        );
+
+                    if (!available) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'El horario seleccionado ya no está disponible',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                  }
+
+                  Navigator.pushNamed(
+                    context,
+                    '/confirm-appointment',
+                    arguments: {
+                      'isReschedule': isReschedule,
+                      'appointmentId': appointmentId,
+                      'date': formattedDate,
+                      'time': selectedTime,
+                      'treatment': selectedTreatment,
+                      'doctor': doctor,
+                    },
+                  );
+                } catch (e) {
+                  final message = e.toString().replaceFirst('Exception: ', '');
+
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(message)));
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

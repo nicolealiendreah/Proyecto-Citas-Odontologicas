@@ -93,9 +93,10 @@ class ManageAppointmentsScreen extends StatelessWidget {
 
                       final esFutura = fechaHoraCita.isAfter(DateTime.now());
 
-                      return esFutura &&
-                          status != 'cancelada' &&
-                          status != 'completada';
+                      final estadoActivo =
+                          status == 'programada' || status == 'confirmada';
+
+                      return esFutura && estadoActivo;
                     }).toList();
 
                     if (citas.isEmpty) {
@@ -418,7 +419,10 @@ class ManageAppointmentsScreen extends StatelessWidget {
                             Navigator.pushNamed(
                               context,
                               '/appointments',
-                              arguments: appointmentId,
+                              arguments: {
+                                'appointmentId': appointmentId,
+                                'treatment': treatment,
+                              },
                             );
                           },
                           style: OutlinedButton.styleFrom(
@@ -442,9 +446,26 @@ class ManageAppointmentsScreen extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            await AppointmentService().cancelAppointment(
-                              appointmentId,
-                            );
+                            try {
+                              await AppointmentService().cancelAppointment(
+                                appointmentId,
+                              );
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Cita cancelada correctamente'),
+                                ),
+                              );
+                            } catch (e) {
+                              final message = e.toString().replaceFirst(
+                                'Exception: ',
+                                '',
+                              );
+
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(message)));
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFFF2CACA)),

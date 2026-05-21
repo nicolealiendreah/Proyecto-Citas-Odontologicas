@@ -124,7 +124,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                             content: Text(
                               isReschedule
                                   ? 'Cita reprogramada correctamente'
-                                  : 'Cita confirmada correctamente',
+                                  : 'Cita programada correctamente',
                             ),
                           ),
                         );
@@ -134,9 +134,14 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                           '/manage-appointments',
                         );
                       } catch (e) {
+                        final message = e.toString().replaceFirst(
+                          'Exception: ',
+                          '',
+                        );
+
                         ScaffoldMessenger.of(
                           context,
-                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                        ).showSnackBar(SnackBar(content: Text(message)));
                       }
                     },
                     style: ElevatedButton.styleFrom(
