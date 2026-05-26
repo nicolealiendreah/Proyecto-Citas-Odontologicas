@@ -9,6 +9,7 @@ import 'screens/appointments_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/manage_appointments_screen.dart';
 import 'screens/confirm_appointment_screen.dart';
+import 'screens/verify_carnet_screen.dart';
 
 class MyDentApp extends StatelessWidget {
   const MyDentApp({super.key});
@@ -48,6 +49,7 @@ class MyDentApp extends StatelessWidget {
         '/history': (_) => const HistoryScreen(),
         '/manage-appointments': (_) => const ManageAppointmentsScreen(),
         '/confirm-appointment': (_) => const ConfirmAppointmentScreen(),
+        '/verify-carnet': (context) => const VerifyCarnetScreen(),
       },
     );
   }
