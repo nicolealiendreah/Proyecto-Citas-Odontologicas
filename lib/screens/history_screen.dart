@@ -15,8 +15,9 @@ class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final phone = user?.phoneNumber;
 
-    if (user == null) {
+    if (user == null || phone == null) {
       return const Scaffold(
         body: Center(child: Text('Usuario no autenticado')),
       );
@@ -55,7 +56,7 @@ class HistoryScreen extends StatelessWidget {
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('appointments')
-                      .where('userId', isEqualTo: user.uid)
+                      .where('patientPhone', isEqualTo: phone)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -165,7 +166,7 @@ class HistoryScreen extends StatelessWidget {
                 const SizedBox(height: 22),
                 InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => _downloadFullReport(context, user.uid),
+                  onTap: () => _downloadFullReport(context, phone),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -206,11 +207,11 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _downloadFullReport(BuildContext context, String userId) async {
+  Future<void> _downloadFullReport(BuildContext context, String phone) async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('appointments')
-          .where('userId', isEqualTo: userId)
+          .where('patientPhone', isEqualTo: phone)
           .get();
 
       final citas = snapshot.docs.where((doc) {

@@ -1,47 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../core/app_colors.dart';
 import '../core/mobile_frame.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/auth_logo.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
-import 'otp_register_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class OtpRegisterScreen extends StatefulWidget {
+  final String verificationId;
+  final String phone;
+
+  const OtpRegisterScreen({
+    super.key,
+    required this.verificationId,
+    required this.phone,
+  });
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<OtpRegisterScreen> createState() => _OtpRegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _phoneController = TextEditingController();
+class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
+  final _codeController = TextEditingController();
 
   bool isLoading = false;
   String? errorText;
 
-  String _formatBoliviaPhone(String phone) {
-    final cleanPhone = phone.replaceAll(' ', '').trim();
+  Future<void> _verifyCode() async {
+    final smsCode = _codeController.text.trim();
 
-    if (cleanPhone.startsWith('+591')) {
-      return cleanPhone;
-    }
-
-    return '+591$cleanPhone';
-  }
-
-  Future<void> _sendVerificationCode() async {
-    final phone = _phoneController.text.trim();
-
-    if (phone.length < 8) {
+    if (smsCode.isEmpty) {
       setState(() {
-        errorText = 'Ingresa un número de celular válido.';
+        errorText = 'Ingresa el código de verificación.';
       });
       return;
     }
-
-    final formattedPhone = _formatBoliviaPhone(phone);
 
     setState(() {
       isLoading = true;
@@ -49,46 +45,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: formattedPhone,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          // En algunos dispositivos Android Firebase puede verificar automáticamente.
-          // Igual manejaremos el flujo principal con el código SMS.
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          setState(() {
-            isLoading = false;
-            errorText = e.message ?? 'No se pudo enviar el código.';
-          });
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          setState(() {
-            isLoading = false;
-          });
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OtpRegisterScreen(
-                verificationId: verificationId,
-                phone: formattedPhone,
-              ),
-            ),
-          );
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
+      final credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: smsCode,
       );
-    } catch (_) {
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user;
+
+      if (user == null) {
+        setState(() {
+          isLoading = false;
+          errorText = 'No se pudo registrar el usuario.';
+        });
+        return;
+      }
+
+      await _saveUserIfNotExists(user);
+
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    } on FirebaseAuthException catch (e) {
       setState(() {
-        isLoading = false;
-        errorText = 'Ocurrió un error inesperado.';
+        errorText = e.message ?? 'Código incorrecto.';
+      });
+    } catch (e) {
+      setState(() {
+        errorText = 'Error real: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveUserIfNotExists(User user) async {
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid);
+
+    final userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      await userRef.set({
+        'uid': user.uid,
+        'phone': widget.phone,
+        'role': 'paciente',
+        'createdAt': FieldValue.serverTimestamp(),
+
+        // Para el flujo simulado del carnet
+        'carnetVerified': false,
+        'profileCompleted': false,
+        'carnetFrontUploaded': false,
+        'carnetBackUploaded': false,
+      });
+    } else {
+      await userRef.update({
+        'phone': widget.phone,
+        'lastLoginAt': FieldValue.serverTimestamp(),
       });
     }
   }
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
@@ -140,7 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'CREA TU CUENTA CLÍNICA',
+                          'VERIFICAR TELÉFONO',
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -148,7 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Regístrate usando solo tu número de celular',
+                          'Enviamos un código SMS a ${widget.phone}',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                             fontSize: 13,
@@ -176,49 +204,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
 
                         CustomTextField(
-                          label: 'Número de celular',
-                          hint: 'Ej. 70000000',
-                          icon: Icons.phone_outlined,
-                          controller: _phoneController,
+                          label: 'Código SMS',
+                          hint: 'Ej. 123456',
+                          icon: Icons.sms_outlined,
+                          controller: _codeController,
                         ),
 
                         const SizedBox(height: 34),
 
                         PrimaryButton(
-                          text: isLoading ? 'Enviando...' : 'Enviar código  →',
-                          onPressed: isLoading ? () {} : _sendVerificationCode,
+                          text: isLoading
+                              ? 'Verificando...'
+                              : 'Verificar código  →',
+                          onPressed: isLoading ? () {} : _verifyCode,
                         ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 22),
 
-                        RichText(
-                          text: TextSpan(
+                        TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                },
+                          child: Text(
+                            'Cambiar número de teléfono',
                             style: GoogleFonts.inter(
-                              color: AppColors.textPrimary,
-                              fontSize: 15,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
                             ),
-                            children: [
-                              const TextSpan(text: '¿Ya tienes una cuenta? '),
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.pushReplacementNamed(
-                                      context,
-                                      '/login',
-                                    );
-                                  },
-                                  child: Text(
-                                    'Inicia sesión',
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xFF0A6C99),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ],

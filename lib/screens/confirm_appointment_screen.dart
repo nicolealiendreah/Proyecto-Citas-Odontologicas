@@ -91,8 +91,9 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () async {
                       try {
-                        final uid = FirebaseAuth.instance.currentUser!.uid;
-
+                        final user = FirebaseAuth.instance.currentUser!;
+                        final uid = user.uid;
+                        final phone = user.phoneNumber ?? '';
                         final userDoc = await FirebaseFirestore.instance
                             .collection('users')
                             .doc(uid)
@@ -116,6 +117,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                             time: time,
                             treatment: treatment,
                             doctor: doctor,
+                            patientPhone: phone,
                           );
                         }
 

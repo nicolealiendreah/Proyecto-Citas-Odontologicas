@@ -13,13 +13,13 @@ class AppointmentService {
   Stream<QuerySnapshot> getMyAppointments() {
     final user = _auth.currentUser;
 
-    if (user == null) {
+    if (user == null || user.phoneNumber == null) {
       return const Stream.empty();
     }
 
     return _db
         .collection('appointments')
-        .where('userId', isEqualTo: user.uid)
+        .where('patientPhone', isEqualTo: user.phoneNumber)
         .where('status', whereIn: ['programada', 'confirmada'])
         .snapshots();
   }
@@ -30,6 +30,7 @@ class AppointmentService {
     required String time,
     required String treatment,
     required String doctor,
+    required String patientPhone,
   }) async {
     final user = _auth.currentUser;
 
@@ -39,11 +40,10 @@ class AppointmentService {
 
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/appointments'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'userId': user.uid,
+        'patientPhone': patientPhone,
         'patientName': patientName,
         'date': date,
         'time': time,
@@ -58,9 +58,7 @@ class AppointmentService {
 
     final data = jsonDecode(response.body);
 
-    throw Exception(
-      data['message'] ?? 'No se pudo registrar la cita',
-    );
+    throw Exception(data['message'] ?? 'No se pudo registrar la cita');
   }
 
   Future<bool> checkAvailability({
@@ -70,14 +68,8 @@ class AppointmentService {
   }) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/appointments/check-availability'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'date': date,
-        'time': time,
-        'doctor': doctor,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'date': date, 'time': time, 'doctor': doctor}),
     );
 
     if (response.statusCode == 200) {
@@ -98,9 +90,7 @@ class AppointmentService {
   Future<void> cancelAppointment(String id) async {
     final response = await http.patch(
       Uri.parse('${ApiConfig.baseUrl}/appointments/$id/cancel'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {
@@ -109,9 +99,7 @@ class AppointmentService {
 
     final data = jsonDecode(response.body);
 
-    throw Exception(
-      data['message'] ?? 'No se pudo cancelar la cita',
-    );
+    throw Exception(data['message'] ?? 'No se pudo cancelar la cita');
   }
 
   Future<void> rescheduleAppointment({
@@ -123,9 +111,7 @@ class AppointmentService {
   }) async {
     final response = await http.put(
       Uri.parse('${ApiConfig.baseUrl}/appointments/$id/reschedule'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'date': newDate,
         'time': newTime,
@@ -140,9 +126,7 @@ class AppointmentService {
 
     final data = jsonDecode(response.body);
 
-    throw Exception(
-      data['message'] ?? 'No se pudo reprogramar la cita',
-    );
+    throw Exception(data['message'] ?? 'No se pudo reprogramar la cita');
   }
 
   Future<void> updateAppointmentStatus({
@@ -151,12 +135,8 @@ class AppointmentService {
   }) async {
     final response = await http.patch(
       Uri.parse('${ApiConfig.baseUrl}/appointments/$id/status'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'status': status,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'status': status}),
     );
 
     if (response.statusCode == 200) {
