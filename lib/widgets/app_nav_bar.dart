@@ -23,6 +23,8 @@ class AppNavBar extends StatelessWidget {
         break;
       case 3:
         await FirebaseAuth.instance.signOut();
+        if (!context.mounted) return;
+
         Navigator.pushReplacementNamed(context, '/login');
         break;
     }

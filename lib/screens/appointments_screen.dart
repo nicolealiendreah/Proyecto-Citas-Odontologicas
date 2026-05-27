@@ -459,6 +459,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                           time: selectedTime,
                           doctor: doctor,
                         );
+                    if (!mounted) return;
 
                     if (!available) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -471,7 +472,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       return;
                     }
                   }
-
+                  if (!mounted) return;
                   Navigator.pushNamed(
                     context,
                     '/confirm-appointment',

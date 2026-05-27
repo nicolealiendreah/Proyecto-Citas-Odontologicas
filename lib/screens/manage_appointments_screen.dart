@@ -450,6 +450,7 @@ class ManageAppointmentsScreen extends StatelessWidget {
                               await AppointmentService().cancelAppointment(
                                 appointmentId,
                               );
+                              if (!context.mounted) return;
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -461,6 +462,8 @@ class ManageAppointmentsScreen extends StatelessWidget {
                                 'Exception: ',
                                 '',
                               );
+
+                              if (!context.mounted) return;
 
                               ScaffoldMessenger.of(
                                 context,

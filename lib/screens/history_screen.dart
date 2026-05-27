@@ -213,6 +213,7 @@ class HistoryScreen extends StatelessWidget {
           .collection('appointments')
           .where('patientPhone', isEqualTo: phone)
           .get();
+      if (!context.mounted) return;
 
       final citas = snapshot.docs.where((doc) {
         final data = doc.data();
@@ -342,6 +343,8 @@ class HistoryScreen extends StatelessWidget {
         filename: 'reporte_historial_citas_mydent.pdf',
       );
     } catch (e) {
+      if (!context.mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al generar el reporte: $e')),
       );
@@ -442,57 +445,6 @@ class HistoryScreen extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required bool dark,
-  }) {
-    return Container(
-      width: double.infinity,
-      height: 126,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-      decoration: BoxDecoration(
-        color: dark ? AppColors.primary : Colors.white.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-              color: dark ? Colors.white : const Color(0xFF0F6B93),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              color: dark ? Colors.white : AppColors.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthTitle(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.4,
-        color: const Color(0xFF6AA5C0),
-      ),
     );
   }
 

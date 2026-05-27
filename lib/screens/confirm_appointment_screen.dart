@@ -98,6 +98,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                             .collection('users')
                             .doc(uid)
                             .get();
+                        if (!context.mounted) return;
 
                         final patientName =
                             userDoc.data()?['fullName'] ?? 'Paciente';
@@ -120,6 +121,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                             patientPhone: phone,
                           );
                         }
+                        if (!context.mounted) return;
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -140,6 +142,7 @@ class ConfirmAppointmentScreen extends StatelessWidget {
                           'Exception: ',
                           '',
                         );
+                        if (!context.mounted) return;
 
                         ScaffoldMessenger.of(
                           context,
