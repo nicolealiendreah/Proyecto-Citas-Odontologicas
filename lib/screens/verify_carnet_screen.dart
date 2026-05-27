@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,8 +29,7 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
   ];
 
   void simulateCarnetScan() {
-    final random = Random();
-
+    final random = Random.secure();
     setState(() {
       frontUploaded = true;
       backUploaded = true;
@@ -40,9 +38,7 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Datos extraídos del carnet correctamente'),
-      ),
+      const SnackBar(content: Text('Datos extraídos del carnet correctamente')),
     );
   }
 
@@ -53,9 +49,7 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
 
     if (!frontUploaded || !backUploaded || fullName == null || ci == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Primero debes escanear el carnet'),
-        ),
+        const SnackBar(content: Text('Primero debes escanear el carnet')),
       );
       return;
     }
@@ -65,33 +59,32 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'fullName': fullName,
-        'ci': ci,
-        'profileCompleted': true,
-        'carnetVerified': true,
-        'carnetFrontUploaded': true,
-        'carnetBackUploaded': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+            'fullName': fullName,
+            'ci': ci,
+            'profileCompleted': true,
+            'carnetVerified': true,
+            'carnetFrontUploaded': true,
+            'carnetBackUploaded': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Carnet verificado correctamente'),
-        ),
+        const SnackBar(content: Text('Carnet verificado correctamente')),
       );
 
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar datos: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar datos: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -150,10 +143,7 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
     );
   }
 
-  Widget buildCarnetStatus({
-    required String title,
-    required bool uploaded,
-  }) {
+  Widget buildCarnetStatus({required String title, required bool uploaded}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
       decoration: BoxDecoration(
@@ -181,12 +171,11 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave = frontUploaded && backUploaded && fullName != null && ci != null;
+    final canSave =
+        frontUploaded && backUploaded && fullName != null && ci != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Verificar carnet'),
-      ),
+      appBar: AppBar(title: const Text('Verificar carnet')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -194,10 +183,7 @@ class _VerifyCarnetScreenState extends State<VerifyCarnetScreen> {
           children: [
             const Text(
               'Escaneo simulado del carnet',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
