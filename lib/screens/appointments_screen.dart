@@ -31,12 +31,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
     String? appointmentId;
     String selectedTreatment = 'Consulta Odontológica';
+    String? currentDate;
+    String? currentTime;
 
     if (args is String) {
       appointmentId = args;
     } else if (args is Map<String, dynamic>) {
       appointmentId = args['appointmentId'];
       selectedTreatment = args['treatment'] ?? 'Consulta Odontológica';
+      currentDate = args['currentDate'];
+      currentTime = args['currentTime'];
     }
 
     final isReschedule = appointmentId != null;
@@ -88,6 +92,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                if (isReschedule) ...[
+                  _buildCurrentAppointmentCard(
+                    selectedTreatment: selectedTreatment,
+                    currentDate: currentDate ?? 'No disponible',
+                    currentTime: currentTime ?? 'No disponible',
+                  ),
+                  const SizedBox(height: 18),
+                ],
+
                 _buildCalendarCard(),
                 const SizedBox(height: 22),
                 _buildAvailableSlotsCard(
@@ -104,6 +117,39 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           ),
         ),
         bottomNavigationBar: const AppNavBar(currentIndex: 1),
+      ),
+    );
+  }
+
+  Widget _buildCurrentAppointmentCard({
+    required String selectedTreatment,
+    required String currentDate,
+    required String currentTime,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7FD),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFAEDDF8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cita actual a reprogramar',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('Tratamiento: $selectedTreatment'),
+          Text('Fecha actual: $currentDate'),
+          Text('Hora actual: $currentTime'),
+        ],
       ),
     );
   }

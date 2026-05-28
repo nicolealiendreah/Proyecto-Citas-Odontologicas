@@ -422,6 +422,8 @@ class ManageAppointmentsScreen extends StatelessWidget {
                               arguments: {
                                 'appointmentId': appointmentId,
                                 'treatment': treatment,
+                                'currentDate': time.split(' - ')[0],
+                                'currentTime': time.split(' - ')[1],
                               },
                             );
                           },
